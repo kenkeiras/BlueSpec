@@ -5,6 +5,9 @@
 (use-package :cl-fad)
 
 
+(defvar *LINK-TABLE* (make-hash-table :test #'equalp))
+
+
 (defclass spec-page()
   ((title :accessor title)
    (rst :accessor rst)
@@ -59,6 +62,23 @@
 (defun mktitle (text)
   (strip (remove-index (strip text))))
 
+(defun read-title-index (title)
+  (let ((index-set (coerce "0123456789." 'list))
+        (numbers '())
+        (current-number 0))
+    (loop for character in (coerce (strip title) 'list)
+       until (not (find character index-set))
+       do (if (equal character #\.)
+              (progn (push current-number numbers)
+                     (setf current-number 0))
+              (setf current-number
+                      (+ (* current-number 10)
+                         (digit-char-p character)))))
+    (when (> current-number 0)
+      (push current-number numbers))
+
+    (reverse numbers)))
+
 
 (defun xmls-to-rst (xml &optional (tchar #\-))
   (cond
@@ -70,6 +90,9 @@
         (append (mapcar #'xmls-to-rst (cddr xml))
                 '(#\Newline)))
 
+       ((string= (first xml) "i")
+        (format NIL "*~{~a~}*" (mapcar #'xmls-to-rst (cddr xml))))
+
        ((string= (first xml) "h2")
         (let ((title (mktitle (format NIL "~{~a~}" (flatten (get-text xml))))))
           (format NIL "~%~a~%~a~%~%"
@@ -79,7 +102,10 @@
        ((string= (first xml) "a")
         (let ((text (strip (format NIL "~{~a~}" (flatten (get-text xml))))))
           (when (> (length text) 0)
-            (format NIL "`~{~a~}`_"  (flatten (get-text xml))))))
+            (let ((href (get-in-toplevel (second xml) "href")))
+              (when (> (length href) 0)
+                (setf (gethash text *LINK-TABLE*) (second (first href)))))
+            (format NIL "`~a`_"  text))))
 
        ((listp xml) (mapcar #'xmls-to-rst xml))))
      ((listp xml) (mapcar #'xmls-to-rst xml))))
@@ -107,13 +133,16 @@
 
   (let ((title (get-text (car (get-in-toplevel content "h2")))))
     (setf (title page)
-          (strip (format t "~{~a~^ ~}"
-                         (flatten
-                          (list
-                           (if title title
-                               (subseq
-                                (caddr (car (get-in-toplevel content "title")))
-                                6)))))))))
+          (strip (first
+                  (flatten
+                   (list
+                    (if title title
+                        (subseq
+                         (caddr (car (get-in-toplevel content "title")))
+                         6))))))))
+
+  (when (< (length (read-title-index (title page))) 2)
+    (format t "~a~%" (title page))))
 
 
 (defun parse (fname)
@@ -128,17 +157,35 @@
     (make-instance 'spec-page
                    :content front-content)))
 
-(defun read-docs ()
-  (loop for f in (list-directory "Body")
+(defun read-docs (&optional (path "."))
+  (loop for f in (list-directory (merge-pathnames path "Body"))
      collect (let ((fname (file-namestring f))
                    (page (parse-page f)))
                (list page fname))))
 
 
 (defun print-docs (docs)
+  (with-open-file (index "index.rst" :direction :output)
+    (format index "Welcome to BlueSpec's documentation!
+====================================
+
+Contents:
+
+.. toctree::
+   :maxdepth: 2
+   :numbered:
+
+")
     (loop for (spec fname) in docs do
          (let ((oname (format NIL "~a.rst"
                               (subseq fname 0 (- (length fname) 4)))))
            ;; (format t "~a -> ~a~%" fname oname)
+           (when (= (length (read-title-index (title spec))) 1)
+             (format index "   ~a~%" fname))
            (with-open-file (f oname :direction :output)
-             (format f "~a" (rst spec))))))
+             (format f "~a" (strip (rst spec))))))
+
+    (format index "~%~%")
+    (loop for key being the hash-keys of *LINK-TABLE*
+       using (hash-value value)
+         do (format index ".. _~a: ~a~%" key value))))
