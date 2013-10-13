@@ -164,6 +164,33 @@
                (list page fname))))
 
 
+(defun toctree (spec docs)
+  (let ((fstr (make-array '(0) :element-type 'base-char
+                          :fill-pointer 0 :adjustable t)))
+    (with-output-to-string (s fstr)
+      ;; Index name
+      (let* ((title (mktitle (title spec)))
+             (underline (make-string (length title) :initial-element #\*)))
+        (format s "~a~%~a~%~a~%~%" underline title underline))
+
+      (format s "
+.. toctree::
+   :maxdepth: 2
+   :numbered:
+
+")
+
+      ;; Index contents
+      (let ((index (read-title-index (title spec))))
+        (loop for (page fname) in docs do
+             (let ((page-index (read-title-index (title page))))
+               (when (and page-index
+                      (equalp (subseq page-index (length index)) index))
+                 (format s "   ~a~%" (subseq fname 0 (- (length fname) 4)))))))
+
+      fstr)))
+
+
 (defun print-docs (docs)
   (with-open-file (index "index.rst" :direction :output)
     (format index "Welcome to BlueSpec's documentation!
@@ -180,10 +207,12 @@ Contents:
          (let ((oname (format NIL "~a.rst"
                               (subseq fname 0 (- (length fname) 4)))))
            ;; (format t "~a -> ~a~%" fname oname)
-           (when (= (length (read-title-index (title spec))) 1)
-             (format index "   ~a~%" fname))
            (with-open-file (f oname :direction :output)
-             (format f "~a" (strip (rst spec))))))
+             (if (= (length (read-title-index (title spec))) 1)
+                 (progn (format index "   ~a~%"
+                                (subseq fname 0 (- (length fname) 4)))
+                        (format f "~a" (strip (toctree spec docs))))
+                 (format f "~a" (strip (rst spec)))))))
 
     (format index "~%~%")
     (loop for key being the hash-keys of *LINK-TABLE*
