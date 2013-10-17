@@ -164,10 +164,13 @@
                                      (char *UNDERLINES* (length index))))))))
 
        ((string= (first xml) "a")
-        (let ((text (strip (format NIL "~{~a~}"
-                                   (flatten
-                                    (mapcar (LAMBDA (X) (xmls-to-rst X pindex))
-                                                         (cddr xml)))))))
+        (let ((text
+               (string-trim
+                '(#\* #\Space #\Tab #\Newline)
+                (format NIL "~{~a~}"
+                        (flatten
+                         (mapcar (LAMBDA (X) (xmls-to-rst X pindex))
+                                 (cddr xml)))))))
           (when (> (length text) 0)
             (if (includep text)
                 text
