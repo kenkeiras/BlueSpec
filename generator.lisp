@@ -131,18 +131,25 @@
     (coerce fname 'string)))
 
 
-(defun xmls-to-rst (xml pindex)
+(defun xmls-to-rst (xml pindex &optional (list-depth -1))
   (cond
     ((stringp xml) xml)
     ((atom xml) NIL)
     ((stringp (first xml))
      (cond
        ((string= (first xml) "p")
-        (append (mapcar (LAMBDA (X) (xmls-to-rst X pindex)) (cddr xml))
-                '(#\Newline)))
+        (format NIL "~{~a~}~%"
+                (mapcar (LAMBDA (X) (xmls-to-rst X pindex list-depth))
+                        (cddr xml))))
 
        ((string= (first xml) "i")
-        (format NIL "*~{~a~}*" (mapcar (LAMBDA (X) (xmls-to-rst X pindex))
+        (format NIL "*~{~a~}*" (mapcar (LAMBDA (X)
+                                         (xmls-to-rst X pindex list-depth))
+                                       (cddr xml))))
+
+       ((string= (first xml) "ul")
+        (format NIL "~{~a~}" (mapcar (LAMBDA (X)
+                                       (xmls-to-rst X pindex (1+ list-depth)))
                                        (cddr xml))))
 
        ((string= (first xml) "h2")
@@ -169,7 +176,7 @@
                 '(#\* #\Space #\Tab #\Newline)
                 (format NIL "~{~a~}"
                         (flatten
-                         (mapcar (LAMBDA (X) (xmls-to-rst X pindex))
+                         (mapcar (LAMBDA (X) (xmls-to-rst X pindex list-depth))
                                  (cddr xml)))))))
           (when (> (length text) 0)
             (if (includep text)
@@ -181,8 +188,15 @@
                             (second (first href)))))
                   (format NIL "`~a`_"  text))))))
 
-       ((listp xml) (mapcar (LAMBDA (X) (xmls-to-rst X pindex)) xml))))
-    ((listp xml) (mapcar (LAMBDA (X) (xmls-to-rst X pindex)) xml))))
+       ((string= (first xml) "li")
+        (format NIL "~%~a* ~{~a ~}" (make-string (max 0 list-depth)
+                                                   :initial-element #\Space)
+                (flatten (mapcar
+                          (LAMBDA (X) (xmls-to-rst X pindex list-depth))
+                          (cdr xml)))))
+       ((listp xml) (mapcar (LAMBDA (X) (xmls-to-rst X pindex list-depth))
+                            xml))))
+    ((listp xml) (mapcar (LAMBDA (X) (xmls-to-rst X pindex list-depth)) xml))))
 
 
 (defun get-content (page)
