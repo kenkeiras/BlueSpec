@@ -178,15 +178,15 @@
                         (flatten
                          (mapcar (LAMBDA (X) (xmls-to-rst X pindex list-depth))
                                  (cddr xml)))))))
-          (when (> (length text) 0)
-            (if (includep text)
-                text
-                (progn
-                  (let ((href (get-in-toplevel (second xml) "href")))
-                    (when (> (length href) 0)
-                      (setf (gethash text *LINK-TABLE*)
-                            (second (first href)))))
-                  (format NIL "`~a`_"  text))))))
+          (if (= (length text) 0) ""
+              (if (includep text)
+                  text
+                  (progn
+                    (let ((href (get-in-toplevel (second xml) "href")))
+                      (when (> (length href) 0)
+                        (setf (gethash text *LINK-TABLE*)
+                              (second (first href)))))
+                    (format NIL "`~a`_"  text))))))
 
        ((string= (first xml) "li")
         (format NIL "~%~a* ~{~a ~}" (make-string (max 0 list-depth)
