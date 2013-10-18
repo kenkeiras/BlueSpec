@@ -131,6 +131,19 @@
     (coerce fname 'string)))
 
 
+(defun split (string separator)
+  (let ((acc '())
+        (ret '()))
+    (loop for character in (coerce string 'list)
+       do (if (char= character separator)
+              (progn (push (coerce (reverse acc) 'string) ret)
+                     (setq acc '()))
+              (push character acc)))
+    (when (> (length acc) 0)
+      (push (coerce (reverse acc) 'string) ret))
+    (reverse ret)))
+
+
 (defun xmls-to-rst (xml pindex &optional (list-depth -1))
   (cond
     ((stringp xml) xml)
@@ -143,6 +156,12 @@
         (format NIL "~{~a~}~%"
                 (mapcar (LAMBDA (X) (xmls-to-rst X pindex list-depth))
                         (cddr xml))))
+
+       ((string= (first xml) "pre")
+        (format NIL "~%.. code-block:: common-lisp~%~%~{    ~a~%~}"
+                (split (format NIL "~{~a~}" (xmls-to-rst (cddr xml)
+                                                         pindex list-depth))
+                       #\Newline)))
 
        ((string= (first xml) "i")
         (format NIL "*~{~a~}*" (mapcar (LAMBDA (X)
