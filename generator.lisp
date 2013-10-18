@@ -137,7 +137,9 @@
     ((atom xml) NIL)
     ((stringp (first xml))
      (cond
-       ((string= (first xml) "p")
+       ((or (string= (first xml) "p")
+            (string= (first xml) "dl")
+            (string= (first xml) "dt"))
         (format NIL "~{~a~}~%"
                 (mapcar (LAMBDA (X) (xmls-to-rst X pindex list-depth))
                         (cddr xml))))
