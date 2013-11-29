@@ -157,6 +157,11 @@
                 (mapcar (LAMBDA (X) (xmls-to-rst X pindex list-depth))
                         (cddr xml))))
 
+       ((string= (first xml) "dd")
+        (format NIL "    ~{~a~}~%"
+                (mapcar (LAMBDA (X) (xmls-to-rst X pindex list-depth))
+                        (cddr xml))))
+
        ((string= (first xml) "pre")
         (format NIL "~%.. code-block:: common-lisp~%~%~{    ~a~%~}"
                 (split (format NIL "~{~a~}" (xmls-to-rst (cddr xml)
