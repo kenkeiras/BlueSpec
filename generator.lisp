@@ -163,6 +163,12 @@
                                                          pindex list-depth))
                        #\Newline)))
 
+
+       ((string= (first xml) "b")
+        (format NIL " **~{~a~}** " (mapcar (LAMBDA (X)
+                                         (xmls-to-rst X pindex list-depth))
+                                       (cddr xml))))
+
        ((string= (first xml) "i")
         (format NIL "*~{~a~}*" (mapcar (LAMBDA (X)
                                          (xmls-to-rst X pindex list-depth))
