@@ -246,7 +246,7 @@
     (make-instance 'spec-page
                    :content front-content)))
 
-(defun read-docs (&optional (path "."))
+(defun read-docs (&optional (path "./"))
   (loop for f in (list-directory (merge-pathnames path "Body"))
      collect (let ((fname (file-namestring f))
                    (page (parse-page f)))
