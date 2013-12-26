@@ -9,17 +9,15 @@
 
 (in-package #:bluespec)
 
-(defvar *LINK-TABLE* (make-hash-table :test #'equalp))
-
 
 (defparameter *UNDERLINES* "=-;:_.,\"'")
 
 (defclass spec-page()
   ((title :accessor title)
    (rst :accessor rst)
-   (links :accessor links)
    (raw :accessor raw)
-   (toctreep :accessor toctreep)))
+   (toctreep :accessor toctreep)
+   (link-table :accessor link-table)))
 
 
 
@@ -27,7 +25,7 @@
 (defmethod initialize-instance :after ((page spec-page)
                                        &key ((:content content)))
   (setf (raw page) content)
-  (setf (links page) '())
+  (setf (link-table page) (make-hash-table :test #'equalp))
 
   (let ((title (get-text (car (get-in-toplevel content "h2")))))
     (setf (title page)
@@ -217,8 +215,7 @@
                         ;; Sphinx uses .html files, not .htm
                         (when (not (some #'(LAMBDA (C) (char= C #\:)) href))
                           (setf href (regex-replace "\.htm" href ".html")))
-                        (setf (links page) (cons text (links page)))
-                        (setf (gethash text *LINK-TABLE*) href)))
+                        (setf (gethash text (link-table page)) href)))
                     (format NIL "`~a`_"  text))))))
 
        ((string= (first xml) "li")
@@ -323,9 +320,9 @@ Contents:
                         (format f "~a" (strip (toctree spec docs))))
                  (progn (format f "~a" (strip (rst spec)))
                         (format f "~%~%")
-                        (dolist (link (links spec))
-                          (format f ".. _~a: ~a~%" link
-                                  (gethash link *LINK-TABLE*))))))))))
+                        (loop for key being the hash-keys in (link-table spec)
+                           using (hash-value value) do
+                             (format f ".. _~a: ~a~%" key value)))))))))
 
 
 (defun reload-docs (docs)
