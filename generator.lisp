@@ -296,8 +296,8 @@
       fstr)))
 
 
-(defun print-docs (docs)
-  (with-open-file (index "index.rst" :direction :output)
+(defun print-docs (docs &optional (path "./"))
+  (with-open-file (index (format NIL "~a/index.rst" path) :direction :output)
     (format index "Welcome to BlueSpec's documentation!
 ====================================
 
@@ -309,7 +309,8 @@ Contents:
 
 ")
     (loop for (spec fname) in docs do
-         (let ((oname (format NIL "~a.rst"
+         (let ((oname (format NIL "~a/~a.rst"
+                              path
                               (subseq fname 0 (- (length fname) 4))))
                (depth (length (read-title-index (title spec)))))
            ;; (format t "~a -> ~a~%" fname oname)
@@ -325,7 +326,7 @@ Contents:
              ;; (format f "~%~%.. include:: links.rst")
              ))))
 
-  (with-open-file (links "links.rst" :direction :output)
+  (with-open-file (links (format NIL "~a/links.rst" path) :direction :output)
     (format links "~%~%")
     (loop for key being the hash-keys of *LINK-TABLE*
        using (hash-value value)
