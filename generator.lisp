@@ -1,9 +1,12 @@
 (ql:quickload "cl-html5-parser")
 (ql:quickload "cl-fad")
 
-(use-package :html5-parser)
-(use-package :cl-fad)
 
+(defpackage #:bluespec
+  (:use :cl :html5-parser :cl-fad)
+  (:export #:spec-page #:print-docs #:read-docs #:reload-docs))
+
+(in-package #:bluespec)
 
 (defvar *LINK-TABLE* (make-hash-table :test #'equalp))
 
