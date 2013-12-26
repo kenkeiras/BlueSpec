@@ -1,9 +1,10 @@
 (ql:quickload "cl-html5-parser")
 (ql:quickload "cl-fad")
+(ql:quickload "cl-ppcre")
 
 
 (defpackage #:bluespec
-  (:use :cl :html5-parser :cl-fad)
+  (:use :cl :html5-parser :cl-fad :cl-ppcre)
   (:export #:spec-page #:print-docs #:read-docs #:reload-docs))
 
 (in-package #:bluespec)
@@ -18,8 +19,7 @@
    (rst :accessor rst)
    (links :accessor links)
    (raw :accessor raw)
-   (toctreep :accessor toctreep)
-   ))
+   (toctreep :accessor toctreep)))
 
 
 
@@ -27,6 +27,7 @@
 (defmethod initialize-instance :after ((page spec-page)
                                        &key ((:content content)))
   (setf (raw page) content)
+  (setf (links page) '())
 
   (let ((title (get-text (car (get-in-toplevel content "h2")))))
     (setf (title page)
@@ -39,7 +40,8 @@
                          6))))))))
 
   (let ((restructured (flatten (xmls-to-rst (get-content content)
-                                            (read-title-index (title page))))))
+                                            (read-title-index (title page))
+                                            page))))
     (setf (toctreep page) (every (lambda (X) (or (includep X)
                                                  (= (length X) 0)))
                                  (mapcar #'strip restructured)))
@@ -134,20 +136,7 @@
     (coerce fname 'string)))
 
 
-(defun split (string separator)
-  (let ((acc '())
-        (ret '()))
-    (loop for character in (coerce string 'list)
-       do (if (char= character separator)
-              (progn (push (coerce (reverse acc) 'string) ret)
-                     (setq acc '()))
-              (push character acc)))
-    (when (> (length acc) 0)
-      (push (coerce (reverse acc) 'string) ret))
-    (reverse ret)))
-
-
-(defun xmls-to-rst (xml pindex &optional (list-depth -1))
+(defun xmls-to-rst (xml pindex page &optional (list-depth -1))
   (cond
     ((stringp xml) xml)
     ((atom xml) NIL)
@@ -157,34 +146,37 @@
             (string= (first xml) "dl")
             (string= (first xml) "dt"))
         (format NIL "~{~a~}~%"
-                (mapcar (LAMBDA (X) (xmls-to-rst X pindex list-depth))
+                (mapcar (LAMBDA (X) (xmls-to-rst X pindex page list-depth))
                         (cddr xml))))
 
        ((string= (first xml) "dd")
         (format NIL "    ~{~a~}~%"
-                (mapcar (LAMBDA (X) (xmls-to-rst X pindex list-depth))
+                (mapcar (LAMBDA (X) (xmls-to-rst X pindex page list-depth))
                         (cddr xml))))
 
        ((string= (first xml) "pre")
         (format NIL "~%.. code-block:: common-lisp~%~%~{    ~a~%~}"
-                (split (format NIL "~{~a~}" (xmls-to-rst (cddr xml)
-                                                         pindex list-depth))
-                       #\Newline)))
+                (split #\Newline
+                       (format NIL "~{~a~}" (xmls-to-rst (cddr xml) pindex
+                                                         page list-depth)))))
 
 
        ((string= (first xml) "b")
         (format NIL "**~{~a~}**" (mapcar (LAMBDA (X)
-                                         (xmls-to-rst X pindex list-depth))
+                                           (xmls-to-rst X pindex
+                                                        page list-depth))
                                        (cddr xml))))
 
        ((string= (first xml) "i")
         (format NIL "*~{~a~}*" (mapcar (LAMBDA (X)
-                                         (xmls-to-rst X pindex list-depth))
+                                         (xmls-to-rst X pindex
+                                                      page list-depth))
                                        (cddr xml))))
 
        ((string= (first xml) "ul")
         (format NIL "~{~a~}" (mapcar (LAMBDA (X)
-                                       (xmls-to-rst X pindex (1+ list-depth)))
+                                       (xmls-to-rst X pindex page
+                                                    (1+ list-depth)))
                                        (cddr xml))))
 
        ((string= (first xml) "h2")
@@ -211,7 +203,8 @@
                 '(#\* #\Space #\Tab #\Newline)
                 (format NIL "~{~a~}"
                         (flatten
-                         (mapcar (LAMBDA (X) (xmls-to-rst X pindex list-depth))
+                         (mapcar (LAMBDA (X) (xmls-to-rst X pindex page
+                                                          list-depth))
                                  (cddr xml)))))))
           (if (= (length text) 0) ""
               (if (includep text)
@@ -219,19 +212,26 @@
                   (progn
                     (let ((href (get-in-toplevel (second xml) "href")))
                       (when (> (length href) 0)
-                        (setf (gethash text *LINK-TABLE*)
-                              (second (first href)))))
+                        (setf href (second (first href)))
+
+                        ;; Sphinx uses .html files, not .htm
+                        (when (not (some #'(LAMBDA (C) (char= C #\:)) href))
+                          (setf href (regex-replace "\.htm" href ".html")))
+                        (setf (links page) (cons text (links page)))
+                        (setf (gethash text *LINK-TABLE*) href)))
                     (format NIL "`~a`_"  text))))))
 
        ((string= (first xml) "li")
         (format NIL "~%~a* ~{~a ~}" (make-string (max 0 list-depth)
                                                    :initial-element #\Space)
                 (flatten (mapcar
-                          (LAMBDA (X) (xmls-to-rst X pindex list-depth))
+                          (LAMBDA (X) (xmls-to-rst X pindex page list-depth))
                           (cdr xml)))))
-       ((listp xml) (mapcar (LAMBDA (X) (xmls-to-rst X pindex list-depth))
+       ((listp xml) (mapcar (LAMBDA (X) (xmls-to-rst X pindex
+                                                     page list-depth))
                             xml))))
-    ((listp xml) (mapcar (LAMBDA (X) (xmls-to-rst X pindex list-depth)) xml))))
+    ((listp xml) (mapcar (LAMBDA (X) (xmls-to-rst X pindex page list-depth))
+                         xml))))
 
 
 (defun get-content (page)
@@ -321,16 +321,11 @@ Contents:
                           (format index "   ~a~%"
                                    (subseq fname 0 (- (length fname) 4))))
                         (format f "~a" (strip (toctree spec docs))))
-                 (format f "~a" (strip (rst spec))))
-             ;; We'll skip the links at this point
-             ;; (format f "~%~%.. include:: links.rst")
-             ))))
-
-  (with-open-file (links (format NIL "~a/links.rst" path) :direction :output)
-    (format links "~%~%")
-    (loop for key being the hash-keys of *LINK-TABLE*
-       using (hash-value value)
-       do (format links ".. _~a: ~a~%" key value))))
+                 (progn (format f "~a" (strip (rst spec)))
+                        (format f "~%~%")
+                        (dolist (link (links spec))
+                          (format f ".. _~a: ~a~%" link
+                                  (gethash link *LINK-TABLE*))))))))))
 
 
 (defun reload-docs (docs)
