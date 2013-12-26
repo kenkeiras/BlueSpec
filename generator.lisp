@@ -208,15 +208,19 @@
               (if (includep text)
                   text
                   (progn
-                    (let ((href (get-in-toplevel (second xml) "href")))
-                      (when (> (length href) 0)
-                        (setf href (second (first href)))
+                    (let ((link-text NIL)
+                          (props (get-in-toplevel (second xml) "href")))
+                      (loop for (key href) in props
+                         if (string= key "href") do
+                           ;;; Sphinx uses .html files, not .htm
+                           (when (not
+                                  (some #'(LAMBDA (C) (char= C #\:)) href))
+                             (setf href (regex-replace "\.htm" href ".html")))
 
-                        ;; Sphinx uses .html files, not .htm
-                        (when (not (some #'(LAMBDA (C) (char= C #\:)) href))
-                          (setf href (regex-replace "\.htm" href ".html")))
-                        (setf (gethash text (link-table page)) href)))
-                    (format NIL "`~a`_"  text))))))
+                           (setf (gethash text (link-table page)) href)
+                           (setf link-text (format NIL "`~a`_"  text)))
+                      (if link-text link-text
+                          text)))))))
 
        ((string= (first xml) "li")
         (format NIL "~%~a* ~{~a ~}" (make-string (max 0 list-depth)
