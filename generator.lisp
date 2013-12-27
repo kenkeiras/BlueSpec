@@ -136,7 +136,7 @@
 
 (defun xmls-to-rst (xml pindex page &optional (list-depth -1))
   (cond
-    ((stringp xml) xml)
+    ((stringp xml) (regex-replace-all "`" xml "\\\\`"))
     ((atom xml) NIL)
     ((stringp (first xml))
      (cond
