@@ -8,5 +8,6 @@ be passed to [Sphinx](http://sphinx-doc.org/).
 Dependencies
 ------------
 
-* Common lisp interpreter
+* Common Lisp interpreter
 * [Quicklisp](http://www.quicklisp.org/)
+* [Common Lisp HyperSpec(TM) files](http://www.lispworks.com/documentation/common-lisp.html)
