@@ -332,7 +332,9 @@ Contents:
                         (format f "~%~%")
                         (loop for key being the hash-keys in (link-table spec)
                            using (hash-value value) do
-                             (format f ".. _~a: ~a~%" key value)))))))))
+                             (format f ".. _~a: ~a~%"
+                                     (regex-replace-all ":" key "\\:")
+                                     value)))))))))
 
 
 (defun reload-docs (docs)
