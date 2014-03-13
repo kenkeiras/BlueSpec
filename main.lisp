@@ -1,4 +1,8 @@
 (load "~/.sbclrc")
+
+(ql:quickload 'cl-fad)
+(push (cl-fad:merge-pathnames-as-directory) asdf:*central-registry*)
+
 (asdf:load-system 'bluespec)
 
 (in-package #:bluespec)
