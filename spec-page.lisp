@@ -33,6 +33,8 @@
 
 
 (defun reload-docs (docs)
+  "Repeat the HTML5 to RST conversion of the documents.
+   Intended for interactive use."
   (loop for (spec fname) in docs
      collect (list (make-instance 'spec-page :content (raw spec))
                    fname)))

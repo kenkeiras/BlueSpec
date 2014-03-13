@@ -1,6 +1,7 @@
 (in-package #:bluespec)
 
 (defun parse (fname)
+  "Read a file and return it's node-based representation."
   (with-open-file (f fname)
     (let ((text (make-string (file-length f))))
       (read-sequence text f)
@@ -8,6 +9,7 @@
 
 
 (defun parse-page (&optional (fname "Front/Contents.htm"))
+  "Convert a file into a spec-page."
   (let ((front-content (parse fname)))
     (make-instance 'spec-page
                    :content front-content)))

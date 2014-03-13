@@ -1,13 +1,15 @@
 (in-package #:bluespec)
 
 (defun get-in-toplevel (content tag)
-    (loop for entry in content
+  "Retrieve all string entries of the list."
+  (loop for entry in content
      if (and (listp entry)
-            (string= (car entry) tag))
-       collect entry))
+             (string= (car entry) tag))
+     collect entry))
 
 
 (defun get-content (page)
+  "Extract the data containing the page contents."
   (let ((hr-count 0))
     (loop for tag in page
        if (and (listp tag)
@@ -22,14 +24,16 @@
 
 
 (defun get-text (tag)
+  "Retrieve the text nodes inside the tag."
   (if (listp tag)
       (let ((elements (cddr tag)))
         (loop for element in elements
-          collect (get-text element)))
+           collect (get-text element)))
       tag))
 
 
 (defun extract-text (content)
+  "Retrieve all the text inside the tags and return it as a list of strings."
   (loop for text in
        (mapcar #'strip
                (flatten (mapcar #'get-text content)))
@@ -39,12 +43,14 @@
 
 
 (defun includep (text)
+  "Check whether the line contains a inclusion directive."
   (and (> (length text) 12)
        (string= (subseq (strip text) 0 12)
                 ".. include::")))
 
 
 (defun fname-from-index (index)
+  "Guess the assigned file name given the hierarchical index."
   (when (= (length index) 0)
     (format t "===> ~a~%" index)
     (assert NIL))
@@ -57,6 +63,7 @@
 
 
 (defun xmls-to-rst (xml pindex page &optional (list-depth -1))
+  "Convert a XML tree into it's RST representation."
   (cond
     ((stringp xml) (regex-replace-all "`" xml "\\\\`"))
     ((atom xml) NIL)
@@ -103,7 +110,7 @@
         (format NIL "~{~a~}" (mapcar (LAMBDA (X)
                                        (xmls-to-rst X pindex page
                                                     (1+ list-depth)))
-                                       (cddr xml))))
+                                     (cddr xml))))
 
        ((string= (first xml) "h2")
         (let* ((text (format NIL "~{~a~}" (flatten (get-text xml))))
@@ -152,7 +159,7 @@
 
        ((string= (first xml) "li")
         (format NIL "~%~a* ~{~a ~}" (make-string (max 0 list-depth)
-                                                   :initial-element #\Space)
+                                                 :initial-element #\Space)
                 (flatten (mapcar
                           (LAMBDA (X) (xmls-to-rst X pindex page list-depth))
                           (cdr xml)))))

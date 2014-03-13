@@ -1,6 +1,7 @@
 (in-package #:bluespec)
 
 (defun toctree (spec docs)
+  "Create the TOC tree from a spec-page."
   (let ((fstr (make-array '(0) :element-type 'base-char
                           :fill-pointer 0 :adjustable t)))
     (with-output-to-string (s fstr)
@@ -30,6 +31,7 @@
 
 
 (defun print-docs (docs &optional (path "./"))
+  "Output the document contents to a directory."
   (with-open-file (index (format NIL "~a/index.rst" path) :direction :output)
     (format index "Welcome to BlueSpec's documentation!
 ====================================
