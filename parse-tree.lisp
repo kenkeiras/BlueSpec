@@ -55,14 +55,19 @@
 (defun xmls-to-rst (xml pindex page &optional (list-depth -1))
   "Convert a XML tree into it's RST representation."
   (cond
-    ((stringp xml) (regex-replace-all "`" xml "\\\\`"))
+    ((stringp xml) (regex-replace-all (coerce '(#\Newline #\Space #\+) 'string)
+                                      (regex-replace-all "`" xml "\\\\`")
+                                      (coerce '(#\Newline) 'string)))
     ((atom xml) NIL)
     ((stringp (first xml))
      (cond
        ((or (string= (first xml) "p")
             (string= (first xml) "dl")
             (string= (first xml) "dt"))
-        (format NIL "~{~a~}~%"
+        (format NIL "~{~a~}~%~%"
+                (mapcar (LAMBDA (X) (xmls-to-rst X pindex page list-depth))
+                        (cddr xml))))
+
                 (mapcar (LAMBDA (X) (xmls-to-rst X pindex page list-depth))
                         (cddr xml))))
 
