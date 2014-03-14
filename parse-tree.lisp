@@ -68,6 +68,8 @@
                 (mapcar (LAMBDA (X) (xmls-to-rst X pindex page list-depth))
                         (cddr xml))))
 
+       ((string= (first xml) "tt") ; This should be inlined code
+        (format NIL "~{~a~}"
                 (mapcar (LAMBDA (X) (xmls-to-rst X pindex page list-depth))
                         (cddr xml))))
 
