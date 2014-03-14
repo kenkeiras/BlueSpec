@@ -1,4 +1,4 @@
-(load "~/.sbclrc")
+(load "~/quicklisp/setup.lisp")
 
 (ql:quickload 'cl-fad)
 (push (cl-fad:merge-pathnames-as-directory) asdf:*central-registry*)
@@ -13,4 +13,4 @@
     (format t "~a documents ~%" (length docs))
     (print-docs docs output-path)))
 
-(main "HyperSpec/" "result/")
+(main "HyperSpec/" "sphinx/")
