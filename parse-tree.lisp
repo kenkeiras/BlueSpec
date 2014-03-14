@@ -32,16 +32,6 @@
       tag))
 
 
-(defun extract-text (content)
-  "Retrieve all the text inside the tags and return it as a list of strings."
-  (loop for text in
-       (mapcar #'strip
-               (flatten (mapcar #'get-text content)))
-     if (and text
-             (> (length text) 0))
-     collect text))
-
-
 (defun includep (text)
   "Check whether the line contains a inclusion directive."
   (and (> (length text) 12)
