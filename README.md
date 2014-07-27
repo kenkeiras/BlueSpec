@@ -21,6 +21,8 @@ are the ones named `Body` `Data` `Front` `Graphics` `Issues`.
 * Create a directory named `sphinx` and generate a Sphinx documentation template,
 for example
 
+&nbsp;
+
     cd sphinx
     sphinx-quickstart # This will ask for some data, just remember to keep the suffix as .rst and the index file name
 
