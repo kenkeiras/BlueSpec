@@ -5,7 +5,7 @@
   (with-open-file (f fname)
     (let ((text (make-string (file-length f))))
       (read-sequence text f)
-      (node-to-xmls (parse-html5-fragment text) NIL))))
+      (parse-html5-fragment text :dom :xmls))))
 
 
 (defun parse-page (&optional (fname "Front/Contents.htm"))
